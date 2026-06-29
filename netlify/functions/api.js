@@ -1,7 +1,54 @@
 import serverless from "serverless-http";
 
-import { createApp } from "../../src/index.js";
+let cachedHandler;
 
-const app = createApp();
+function getErrorMessage(error) {
+	if (error instanceof Error && typeof error.message === "string") {
+		return error.message;
+	}
 
-export const handler = serverless(app);
+	return "Server startup failed.";
+}
+
+function withStartupHint(message) {
+	if (message.includes("OPENAI_API_KEY is required")) {
+		return "OPENAI_API_KEY mangler i Netlify Environment Variables.";
+	}
+
+	if (message.includes("OPENAI_MODEL")) {
+		return "OPENAI_MODEL mangler eller er ugyldig i Netlify Environment Variables.";
+	}
+
+	return message;
+}
+
+async function getHandler() {
+	if (cachedHandler) {
+		return cachedHandler;
+	}
+
+	const { createApp } = await import("../../src/index.js");
+	cachedHandler = serverless(createApp());
+	return cachedHandler;
+}
+
+export async function handler(event, context) {
+	try {
+		const runtimeHandler = await getHandler();
+		return await runtimeHandler(event, context);
+	} catch (error) {
+		const message = withStartupHint(getErrorMessage(error));
+
+		return {
+			statusCode: 500,
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				error: "ServerStartupError",
+				code: "server_startup_failed",
+				message
+			})
+		};
+	}
+}
