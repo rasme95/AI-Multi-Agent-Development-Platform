@@ -1,10 +1,9 @@
 import { securityAgentSystemPrompt } from "../prompts/security.prompt.js";
-import type { OpenAIService } from "../services/openai.service.js";
 
 import { SpecialistAgent } from "./specialist.agent.js";
 
 export class SecurityAgent extends SpecialistAgent {
-  public constructor(openAIService: OpenAIService, model: string) {
+  constructor(openAIService, model) {
     super(openAIService, model, {
       id: "security-engineer",
       description: "Security specialist for secure design, auth boundaries, and application risk.",

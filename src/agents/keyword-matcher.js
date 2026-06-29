@@ -1,21 +1,11 @@
-import type { AgentExecutionInput } from "../types/agent.js";
-
-export interface KeywordMatchOptions {
-  agentId: string;
-  description: string;
-  keywords: string[];
-  baselineScore?: number;
-  maxScore?: number;
-}
-
-function tokenize(text: string): string[] {
+function tokenize(text) {
   return text
     .toLowerCase()
     .split(/[^a-z0-9]+/i)
     .filter((token) => token.length >= 3);
 }
 
-function getLastAssistantAgentId(input: AgentExecutionInput): string | undefined {
+function getLastAssistantAgentId(input) {
   const history = input.conversationHistory ?? [];
 
   for (let index = history.length - 1; index >= 0; index -= 1) {
@@ -28,7 +18,7 @@ function getLastAssistantAgentId(input: AgentExecutionInput): string | undefined
   return undefined;
 }
 
-function isFollowUpRequest(userRequest: string): boolean {
+function isFollowUpRequest(userRequest) {
   const normalizedRequest = userRequest.toLowerCase();
 
   return [
@@ -45,10 +35,7 @@ function isFollowUpRequest(userRequest: string): boolean {
   ].some((phrase) => normalizedRequest.includes(phrase));
 }
 
-export function calculateKeywordMatchScore(
-  input: AgentExecutionInput,
-  options: KeywordMatchOptions
-): number {
+export function calculateKeywordMatchScore(input, options) {
   const normalizedRequest = input.userRequest.toLowerCase();
   const baselineScore = options.baselineScore ?? 0;
   const maxScore = options.maxScore ?? 100;

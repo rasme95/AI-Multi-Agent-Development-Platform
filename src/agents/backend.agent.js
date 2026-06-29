@@ -1,5 +1,4 @@
 import { backendAgentSystemPrompt } from "../prompts/backend.prompt.js";
-import type { OpenAIService } from "../services/openai.service.js";
 import { SpecialistAgent } from "./specialist.agent.js";
 
 const backendKeywords = [
@@ -18,10 +17,10 @@ const backendKeywords = [
 ];
 
 export class BackendAgent extends SpecialistAgent {
-  public constructor(openAIService: OpenAIService, model: string) {
+  constructor(openAIService, model) {
     super(openAIService, model, {
       id: "backend-expert",
-      description: "Backend engineering specialist for Node.js and TypeScript systems.",
+      description: "Backend engineering specialist for Node.js and JavaScript service systems.",
       systemPrompt: backendAgentSystemPrompt,
       keywords: backendKeywords
     });

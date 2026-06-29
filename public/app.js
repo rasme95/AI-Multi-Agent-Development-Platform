@@ -6,6 +6,8 @@ const resetButton = document.querySelector("#reset-button");
 const statusPill = document.querySelector("#status-pill");
 const agentSelect = document.querySelector("#agent-select");
 
+const API_BASE = window.location.hostname.includes("localhost") ? "" : "/.netlify/functions/api";
+
 const SESSION_ID_KEY = "agentops-session-id";
 const MESSAGE_HISTORY_KEY = "agentops-session-messages";
 
@@ -134,7 +136,7 @@ function getRequestBody(question, agentId) {
 }
 
 async function loadAgents() {
-  const response = await fetch("/agents");
+  const response = await fetch(`${API_BASE}/agents`);
   const payload = await response.json().catch(() => null);
 
   if (!response.ok || !payload || !Array.isArray(payload.agents)) {
@@ -166,7 +168,7 @@ async function hydrateServerHistory() {
     return;
   }
 
-  const response = await fetch(`/sessions/${sessionId}/history`);
+  const response = await fetch(`${API_BASE}/sessions/${sessionId}/history`);
   const payload = await response.json().catch(() => null);
 
   if (!response.ok || !payload || !Array.isArray(payload.history) || payload.history.length === 0) {
@@ -231,7 +233,7 @@ async function readServerEvents(response, onEvent) {
 }
 
 async function streamQuestion(question, agentId, onEvent) {
-  const response = await fetch("/ask/stream", {
+  const response = await fetch(`${API_BASE}/ask/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -254,7 +256,9 @@ async function resetSession() {
   updateStatusLabel("");
 
   if (currentSessionId) {
-    await fetch(`/sessions/${currentSessionId}`, { method: "DELETE" }).catch(() => undefined);
+    await fetch(`${API_BASE}/sessions/${currentSessionId}`, { method: "DELETE" }).catch(
+      () => undefined
+    );
   }
 }
 
@@ -312,7 +316,7 @@ function handleStreamEnd(payload, streamedAnswer) {
   const finalTitle =
     typeof payload.selectedAgentId === "string"
       ? getAgentMessageTitle(payload.selectedAgentId)
-      : messages[messages.length - 1]?.title ?? "Agent";
+      : (messages[messages.length - 1]?.title ?? "Agent");
 
   updateAssistantMessage(finalTitle, finalAnswer);
   return finalAnswer;

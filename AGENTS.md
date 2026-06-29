@@ -11,16 +11,15 @@ Do not implement agent-to-agent collaboration, persistent memory, or autonomous 
 
 - Keep orchestrator domain-agnostic.
 - Put expertise in agent prompts and agent implementations.
-- Keep OpenAI SDK usage inside `src/services/openai.service.ts`.
-- Keep dependency wiring in `src/index.ts`.
-- Maintain strict typing at module boundaries.
+- Keep OpenAI SDK usage inside `src/services/openai.service.js`.
+- Keep dependency wiring in `src/index.js`.
+- Maintain clear contracts at module boundaries.
 
 ## Development workflow
 
 Use these commands before finishing work:
 
 ```bash
-npm run typecheck
 npm run lint
 npm run build
 ```
@@ -36,9 +35,10 @@ npm run build
 ## Extension pattern
 
 When adding a new agent:
+
 1. Add prompt in `src/prompts/`
 2. Add agent in `src/agents/` implementing `Agent`
-3. Register in `src/index.ts`
+3. Register in `src/index.js`
 4. Adjust orchestrator selection only through agent contracts and scoring, not hardcoded domain logic in the orchestrator
 
 ## Non-goals for now

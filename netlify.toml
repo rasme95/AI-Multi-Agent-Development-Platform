@@ -1,0 +1,34 @@
+[build]
+  command = "npm run build"
+  publish = "public"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/agents"
+  to = "/.netlify/functions/api/agents"
+  status = 200
+
+[[redirects]]
+  from = "/ask"
+  to = "/.netlify/functions/api/ask"
+  status = 200
+
+[[redirects]]
+  from = "/ask/stream"
+  to = "/.netlify/functions/api/ask/stream"
+  status = 200
+
+[[redirects]]
+  from = "/sessions/*"
+  to = "/.netlify/functions/api/sessions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

@@ -3,6 +3,7 @@
 Phase 2 extends the production-oriented foundation into a modular agent team for general software engineering guidance.
 
 Implemented in this phase:
+
 - One orchestrator
 - A specialist agent team for broad development questions
 - OpenAI API integration
@@ -12,20 +13,22 @@ Implemented in this phase:
 - Streaming responses in the browser UI
 - Session-scoped in-memory conversation history
 - Smarter routing using profile overlap, keyword scoring, and follow-up continuity
-- Strict TypeScript architecture designed for extensibility
+- Lightweight JavaScript runtime designed for straightforward deployment
 
 ## Why this architecture
 
 This phase still avoids advanced agent-to-agent collaboration logic and focuses on stable multi-agent routing.
 
 Key decisions:
+
 - **Orchestrator has no domain knowledge**: it only selects and invokes agents.
 - **Agents encapsulate expertise**: domain behavior lives in specialist prompts and agent definitions.
-- **Composition root in one place**: dependency wiring is centralized in `src/index.ts`.
-- **Typed boundaries**: shared interfaces enforce contracts between modules.
+- **Composition root in one place**: dependency wiring is centralized in `src/index.js`.
+- **Clear module boundaries**: the runtime stays simple without a transpilation layer.
 - **Validation at boundaries**: env validation via Zod and request validation in HTTP layer.
 
 Tradeoffs:
+
 - Agent routing is intentionally hybrid and lightweight rather than model-routed, to keep Phase 2 understandable and inexpensive.
 - No memory, persistence, or cross-agent collaboration yet by design.
 - Single-process runtime is enough for now; can later split orchestrator and agents into separate services.
@@ -33,7 +36,7 @@ Tradeoffs:
 ## Tech Stack
 
 - Node.js 20+
-- TypeScript (strict)
+- JavaScript (ES modules)
 - OpenAI SDK
 - Express
 - dotenv
@@ -46,29 +49,30 @@ Tradeoffs:
 ```text
 src/
   agents/
-    backend.agent.ts
-    frontend.agent.ts
-    cloud-architect.agent.ts
-    devops.agent.ts
-    database.agent.ts
-    security.agent.ts
-    solution-architect.agent.ts
-    code-reviewer.agent.ts
+    backend.agent.js
+    frontend.agent.js
+    cloud-architect.agent.js
+    devops.agent.js
+    database.agent.js
+    security.agent.js
+    solution-architect.agent.js
+    code-reviewer.agent.js
   orchestrator/
-    orchestrator.ts
+    orchestrator.js
   services/
-    openai.service.ts
+    openai.service.js
   prompts/
-    backend.prompt.ts
+    backend.prompt.js
   interfaces/
-    http.ts
-  types/
-    agent.ts
-    orchestrator.ts
+    http.js
   config/
-    env.ts
-    logger.ts
-  index.ts
+    env.js
+    logger.js
+  index.js
+
+netlify/
+  functions/
+    api.js
 
 docs/
   architecture.md
@@ -108,7 +112,8 @@ npm run dev -- "How should I design a scalable Express API with auth?"
 ```
 
 Flow:
-1. `index.ts` creates orchestrator and agents
+
+1. `index.js` creates orchestrator and agents
 2. Orchestrator receives question
 3. Orchestrator selects the best matching specialist or the fallback architect
 4. Selected specialist calls OpenAI through service
@@ -178,6 +183,7 @@ GET http://localhost:3000/sessions/<sessionId>/history
 ## Agent team
 
 Current specialists:
+
 - `solution-architect`
 - `backend-expert`
 - `frontend-expert`
@@ -190,6 +196,7 @@ Current specialists:
 The solution architect acts as the default fallback for broad engineering questions. Other specialists are selected through keyword-based match scoring or explicit agent override.
 
 Routing is now smarter than plain keyword matching. Each specialist score combines:
+
 - explicit agent override
 - domain keyword hits
 - overlap between the request and the agent profile
@@ -200,6 +207,7 @@ Routing is now smarter than plain keyword matching. Each specialist score combin
 The project now exposes a simple built-in chat frontend instead of relying on editor-only tooling.
 
 Why this is the right Phase 2 choice:
+
 - The platform keeps a stable HTTP boundary that future clients can reuse.
 - The UI remains thin, so orchestration and agent behavior stay in the backend.
 - You get a normal product interface now without introducing frontend framework complexity too early.
@@ -207,7 +215,6 @@ Why this is the right Phase 2 choice:
 ## Quality Commands
 
 ```bash
-npm run typecheck
 npm run lint
 npm run format:check
 npm run build
@@ -217,11 +224,12 @@ npm run build
 
 1. Create a prompt in `src/prompts/`
 2. Create an agent class in `src/agents/` implementing `Agent`
-3. Register the agent in `src/index.ts`
+3. Register the agent in `src/index.js`
 4. Update routing keywords or specialist scoring as needed
 5. Add tests for agent selection and execution flow
 
 Suggested next agents:
+
 - QA agent
 - Product engineer agent
 - Data/AI platform agent

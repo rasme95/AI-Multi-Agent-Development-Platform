@@ -1,27 +1,11 @@
 import OpenAI from "openai";
 
-import type { ConversationTurn } from "../types/conversation.js";
-
-export interface GenerateResponseParams {
-  model: string;
-  systemPrompt: string;
-  userPrompt: string;
-  conversationHistory?: ConversationTurn[];
-}
-
-interface ResponseTextDeltaEvent {
-  type?: string;
-  delta?: string;
-}
-
 export class OpenAIService {
-  private readonly client: OpenAI;
-
-  public constructor(apiKey: string) {
+  constructor(apiKey) {
     this.client = new OpenAI({ apiKey });
   }
 
-  public async generateResponse(params: GenerateResponseParams): Promise<string> {
+  async generateResponse(params) {
     const response = await this.client.responses.create({
       model: params.model,
       instructions: params.systemPrompt,
@@ -36,7 +20,7 @@ export class OpenAIService {
     throw new Error("OpenAI response did not include output_text");
   }
 
-  public async *streamResponse(params: GenerateResponseParams): AsyncIterable<string> {
+  async *streamResponse(params) {
     const stream = await this.client.responses.create({
       model: params.model,
       instructions: params.systemPrompt,
@@ -46,7 +30,7 @@ export class OpenAIService {
 
     let receivedText = false;
 
-    for await (const event of stream as AsyncIterable<ResponseTextDeltaEvent>) {
+    for await (const event of stream) {
       if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
         receivedText = true;
         yield event.delta;
@@ -58,7 +42,7 @@ export class OpenAIService {
     }
   }
 
-  private buildInput(params: GenerateResponseParams): string {
+  buildInput(params) {
     const history = params.conversationHistory ?? [];
     if (history.length === 0) {
       return params.userPrompt;

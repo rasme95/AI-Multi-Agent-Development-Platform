@@ -1,28 +1,15 @@
-import type pino from "pino";
-
-import type { Agent, AgentSummary } from "../types/agent.js";
-import type {
-  OrchestratorRequest,
-  OrchestratorResult,
-  OrchestratorStreamResult
-} from "../types/orchestrator.js";
-
-export interface OrchestratorOptions {
-  defaultAgentId?: string;
-}
-
 export class Orchestrator {
-  public constructor(
-    private readonly agents: Agent[],
-    private readonly logger: pino.Logger,
-    private readonly options: OrchestratorOptions = {}
-  ) {
+  constructor(agents, logger, options = {}) {
+    this.agents = agents;
+    this.logger = logger;
+    this.options = options;
+
     if (this.agents.length === 0) {
       throw new Error("Orchestrator requires at least one agent");
     }
   }
 
-  public async handleRequest(request: OrchestratorRequest): Promise<OrchestratorResult> {
+  async handleRequest(request) {
     const selectedAgent = await this.selectAgent(request);
     this.logSelectedAgent(request.requestId, selectedAgent.id, false);
     const result = await selectedAgent.execute(request);
@@ -30,7 +17,7 @@ export class Orchestrator {
     return this.createRequestResult(request, selectedAgent.id, result.answer);
   }
 
-  public async streamRequest(request: OrchestratorRequest): Promise<OrchestratorStreamResult> {
+  async streamRequest(request) {
     const selectedAgent = await this.selectAgent(request);
     this.logSelectedAgent(request.requestId, selectedAgent.id, true);
 
@@ -51,18 +38,14 @@ export class Orchestrator {
     };
   }
 
-  public listAgents(): AgentSummary[] {
+  listAgents() {
     return this.agents.map((agent) => ({
       id: agent.id,
       description: agent.description
     }));
   }
 
-  private createRequestResult(
-    request: OrchestratorRequest,
-    selectedAgentId: string,
-    answer: string
-  ): OrchestratorResult {
+  createRequestResult(request, selectedAgentId, answer) {
     const result = {
       requestId: request.requestId,
       selectedAgentId,
@@ -79,12 +62,12 @@ export class Orchestrator {
     };
   }
 
-  private logSelectedAgent(requestId: string, agentId: string, isStreaming: boolean): void {
+  logSelectedAgent(requestId, agentId, isStreaming) {
     const message = isStreaming ? "Selected agent for streaming" : "Selected agent";
     this.logger.debug({ requestId, agentId }, message);
   }
 
-  private findPreferredAgent(preferredAgentId?: string): Agent | undefined {
+  findPreferredAgent(preferredAgentId) {
     if (!preferredAgentId) {
       return undefined;
     }
@@ -92,7 +75,7 @@ export class Orchestrator {
     return this.agents.find((agent) => agent.id === preferredAgentId);
   }
 
-  private findDefaultAgent(): Agent | undefined {
+  findDefaultAgent() {
     if (!this.options.defaultAgentId) {
       return undefined;
     }
@@ -100,8 +83,8 @@ export class Orchestrator {
     return this.agents.find((agent) => agent.id === this.options.defaultAgentId);
   }
 
-  private async findBestScoringAgent(request: OrchestratorRequest): Promise<Agent | undefined> {
-    let bestAgent: Agent | undefined;
+  async findBestScoringAgent(request) {
+    let bestAgent;
     let bestScore = Number.NEGATIVE_INFINITY;
 
     for (const agent of this.agents) {
@@ -115,7 +98,7 @@ export class Orchestrator {
     return bestAgent;
   }
 
-  private async selectAgent(request: OrchestratorRequest): Promise<Agent> {
+  async selectAgent(request) {
     const preferredAgent = this.findPreferredAgent(request.preferredAgentId);
     if (preferredAgent) {
       return preferredAgent;

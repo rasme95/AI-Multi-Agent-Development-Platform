@@ -1,10 +1,9 @@
 import { databaseAgentSystemPrompt } from "../prompts/database.prompt.js";
-import type { OpenAIService } from "../services/openai.service.js";
 
 import { SpecialistAgent } from "./specialist.agent.js";
 
 export class DatabaseAgent extends SpecialistAgent {
-  public constructor(openAIService: OpenAIService, model: string) {
+  constructor(openAIService, model) {
     super(openAIService, model, {
       id: "database-engineer",
       description: "Database specialist for schema design, SQL performance, and data integrity.",

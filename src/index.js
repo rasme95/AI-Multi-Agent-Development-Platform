@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { BackendAgent } from "./agents/backend.agent.js";
 import { CloudArchitectAgent } from "./agents/cloud-architect.agent.js";
@@ -15,7 +17,7 @@ import { Orchestrator } from "./orchestrator/orchestrator.js";
 import { ConversationStoreService } from "./services/conversation-store.service.js";
 import { OpenAIService } from "./services/openai.service.js";
 
-async function main(): Promise<void> {
+export function createApp() {
   const openAIService = new OpenAIService(env.OPENAI_API_KEY);
   const solutionArchitectAgent = new SolutionArchitectAgent(openAIService, env.OPENAI_MODEL);
   const agents = [
@@ -34,8 +36,29 @@ async function main(): Promise<void> {
   });
   const conversationStore = new ConversationStoreService();
 
+  return createHttpServer(orchestrator, conversationStore);
+}
+
+async function main() {
+  const app = createApp();
+
   const cliQuestion = process.argv.slice(2).join(" ").trim();
   if (cliQuestion.length > 0) {
+    const openAIService = new OpenAIService(env.OPENAI_API_KEY);
+    const solutionArchitectAgent = new SolutionArchitectAgent(openAIService, env.OPENAI_MODEL);
+    const agents = [
+      solutionArchitectAgent,
+      new BackendAgent(openAIService, env.OPENAI_MODEL),
+      new FrontendAgent(openAIService, env.OPENAI_MODEL),
+      new CloudArchitectAgent(openAIService, env.OPENAI_MODEL),
+      new DevOpsAgent(openAIService, env.OPENAI_MODEL),
+      new DatabaseAgent(openAIService, env.OPENAI_MODEL),
+      new SecurityAgent(openAIService, env.OPENAI_MODEL),
+      new CodeReviewerAgent(openAIService, env.OPENAI_MODEL)
+    ];
+    const orchestrator = new Orchestrator(agents, logger, {
+      defaultAgentId: solutionArchitectAgent.id
+    });
     const requestId = crypto.randomUUID();
     const result = await orchestrator.handleRequest({
       userRequest: cliQuestion,
@@ -45,8 +68,6 @@ async function main(): Promise<void> {
     console.log(result.answer);
     return;
   }
-
-  const app = createHttpServer(orchestrator, conversationStore);
 
   app.listen(env.PORT, () => {
     logger.info(
@@ -59,7 +80,12 @@ async function main(): Promise<void> {
   });
 }
 
-main().catch((error: unknown) => {
-  logger.error({ err: error }, "Fatal startup error");
-  process.exitCode = 1;
-});
+const entryFilePath = process.argv[1] ? path.resolve(process.argv[1]) : undefined;
+const moduleFilePath = fileURLToPath(import.meta.url);
+
+if (entryFilePath === moduleFilePath) {
+  main().catch((error) => {
+    logger.error({ err: error }, "Fatal startup error");
+    process.exitCode = 1;
+  });
+}

@@ -2,22 +2,22 @@
 
 ## Components
 
-- **Orchestrator** (`src/orchestrator/orchestrator.ts`)
+- **Orchestrator** (`src/orchestrator/orchestrator.js`)
   - Receives user request
   - Selects agent(s)
   - Executes selected agent
   - Returns unified result
 
-- **Specialist Agents** (`src/agents/*.agent.ts`)
+- **Specialist Agents** (`src/agents/*.agent.js`)
   - Own domain expertise and behavior
   - Use specialized system prompts and keyword-scored routing
   - Call OpenAI through service abstraction
 
-- **OpenAI Service** (`src/services/openai.service.ts`)
+- **OpenAI Service** (`src/services/openai.service.js`)
   - Isolates SDK usage from business logic
   - Enables easy mocking and provider swapping later
 
-- **Interfaces** (`src/interfaces/http.ts`)
+- **Interfaces** (`src/interfaces/http.js`)
   - Handles transport concerns (HTTP)
   - Validates input
   - Keeps framework details out of orchestrator and agents
@@ -37,6 +37,7 @@
 ## Extensibility path
 
 To support future phases without refactoring core boundaries:
+
 - Keep orchestrator domain-agnostic
 - Replace keyword scoring with richer routing strategy (classifier, policies, or evaluation)
 - Add inter-agent message bus abstraction for collaboration
@@ -45,7 +46,7 @@ To support future phases without refactoring core boundaries:
 
 ## Dependency flow
 
-`index.ts` is the composition root and wires dependencies downward:
+`index.js` is the composition root and wires dependencies downward:
 
 - config -> service -> agents -> orchestrator -> interfaces
 

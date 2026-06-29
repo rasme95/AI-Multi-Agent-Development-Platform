@@ -5,24 +5,13 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { z } from "zod";
 
-import type { Orchestrator } from "../orchestrator/orchestrator.js";
-import type { ConversationStoreService } from "../services/conversation-store.service.js";
-import type { OrchestratorRequest } from "../types/orchestrator.js";
-
 const askBodySchema = z.object({
   question: z.string().min(1),
   agentId: z.string().min(1).optional(),
   sessionId: z.string().min(1).optional()
 });
 
-interface UpstreamApiErrorShape {
-  status?: number;
-  code?: string;
-  type?: string;
-  message?: string;
-}
-
-function isUpstreamApiError(error: unknown): error is UpstreamApiErrorShape {
+function isUpstreamApiError(error) {
   if (typeof error !== "object" || error === null) {
     return false;
   }
@@ -34,12 +23,7 @@ const currentFilePath = fileURLToPath(import.meta.url);
 const currentDirPath = path.dirname(currentFilePath);
 const publicDirPath = path.resolve(currentDirPath, "../../public");
 
-function buildOrchestratorRequest(
-  body: z.infer<typeof askBodySchema>,
-  requestId: string,
-  sessionId: string,
-  conversationHistory: ReturnType<ConversationStoreService["getHistory"]>
-): OrchestratorRequest {
+function buildOrchestratorRequest(body, requestId, sessionId, conversationHistory) {
   const baseRequest = {
     userRequest: body.question,
     requestId,
@@ -50,39 +34,33 @@ function buildOrchestratorRequest(
   return body.agentId ? { ...baseRequest, preferredAgentId: body.agentId } : baseRequest;
 }
 
-function writeServerEvent(res: express.Response, payload: unknown): void {
+function writeServerEvent(res, payload) {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
 }
 
-function createUserTurn(question: string) {
+function createUserTurn(question) {
   return {
-    role: "user" as const,
+    role: "user",
     content: question,
     timestamp: new Date().toISOString()
   };
 }
 
-function createAssistantTurn(answer: string, agentId: string) {
+function createAssistantTurn(answer, agentId) {
   return {
-    role: "assistant" as const,
+    role: "assistant",
     content: answer,
     agentId,
     timestamp: new Date().toISOString()
   };
 }
 
-function saveConversationTurns(
-  conversationStore: ConversationStoreService,
-  sessionId: string,
-  question: string,
-  answer: string,
-  agentId: string
-): void {
+function saveConversationTurns(conversationStore, sessionId, question, answer, agentId) {
   conversationStore.appendTurn(sessionId, createUserTurn(question));
   conversationStore.appendTurn(sessionId, createAssistantTurn(answer, agentId));
 }
 
-function startStreamResponse(res: express.Response): void {
+function startStreamResponse(res) {
   res.status(200);
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -90,12 +68,7 @@ function startStreamResponse(res: express.Response): void {
   res.flushHeaders();
 }
 
-function sendStreamStartEvent(
-  res: express.Response,
-  requestId: string,
-  sessionId: string,
-  selectedAgentId: string
-): void {
+function sendStreamStartEvent(res, requestId, sessionId, selectedAgentId) {
   writeServerEvent(res, {
     type: "start",
     requestId,
@@ -104,13 +77,7 @@ function sendStreamStartEvent(
   });
 }
 
-function sendStreamEndEvent(
-  res: express.Response,
-  requestId: string,
-  sessionId: string,
-  selectedAgentId: string,
-  answer: string
-): void {
+function sendStreamEndEvent(res, requestId, sessionId, selectedAgentId, answer) {
   writeServerEvent(res, {
     type: "end",
     requestId,
@@ -120,18 +87,14 @@ function sendStreamEndEvent(
   });
 }
 
-function sendStreamErrorEvent(res: express.Response, error: unknown): void {
+function sendStreamErrorEvent(res, error) {
   writeServerEvent(res, {
     type: "error",
     message: error instanceof Error ? error.message : "Streaming request failed"
   });
 }
 
-function createChatRequest(
-  body: z.infer<typeof askBodySchema>,
-  requestId: string,
-  conversationStore: ConversationStoreService
-) {
+function createChatRequest(body, requestId, conversationStore) {
   const sessionId = body.sessionId ?? crypto.randomUUID();
   const history = conversationStore.getHistory(sessionId);
   const orchestratorRequest = buildOrchestratorRequest(body, requestId, sessionId, history);
@@ -142,7 +105,7 @@ function createChatRequest(
   };
 }
 
-async function readAnswerFromStream(stream: AsyncIterable<string>, res: express.Response): Promise<string> {
+async function readAnswerFromStream(stream, res) {
   let answer = "";
 
   for await (const chunk of stream) {
@@ -153,10 +116,7 @@ async function readAnswerFromStream(stream: AsyncIterable<string>, res: express.
   return answer;
 }
 
-export function createHttpServer(
-  orchestrator: Orchestrator,
-  conversationStore: ConversationStoreService
-): express.Express {
+export function createHttpServer(orchestrator, conversationStore) {
   const app = express();
 
   app.use(express.json());
@@ -241,40 +201,33 @@ export function createHttpServer(
     }
   });
 
-  app.use(
-    (
-      error: unknown,
-      _req: express.Request,
-      res: express.Response,
-      _next: express.NextFunction
-    ) => {
-      void _next;
+  app.use((error, _req, res, _next) => {
+    void _next;
 
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          error: "ValidationError",
-          details: error.issues
-        });
-      }
-
-      if (isUpstreamApiError(error)) {
-        const status =
-          typeof error.status === "number" && error.status >= 400 && error.status <= 599
-            ? error.status
-            : 502;
-
-        return res.status(status).json({
-          error: "UpstreamAIError",
-          code: error.code ?? error.type ?? "unknown_error",
-          message: error.message ?? "Upstream AI request failed"
-        });
-      }
-
-      return res.status(500).json({
-        error: "InternalServerError"
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: "ValidationError",
+        details: error.issues
       });
     }
-  );
+
+    if (isUpstreamApiError(error)) {
+      const status =
+        typeof error.status === "number" && error.status >= 400 && error.status <= 599
+          ? error.status
+          : 502;
+
+      return res.status(status).json({
+        error: "UpstreamAIError",
+        code: error.code ?? error.type ?? "unknown_error",
+        message: error.message ?? "Upstream AI request failed"
+      });
+    }
+
+    return res.status(500).json({
+      error: "InternalServerError"
+    });
+  });
 
   return app;
 }

@@ -35,7 +35,8 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(rgba(26, 23, 20, 0.025) 1px, transparent 1px),
+  background-image:
+    linear-gradient(rgba(26, 23, 20, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(26, 23, 20, 0.025) 1px, transparent 1px);
   background-size: 22px 22px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent 85%);
@@ -291,7 +292,10 @@ button {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 12px 24px rgba(15, 118, 110, 0.26);
-  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    opacity 140ms ease;
 }
 
 button:hover {
