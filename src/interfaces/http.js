@@ -78,9 +78,19 @@ function normalizeUpstreamError(error) {
   };
 }
 
-const currentFilePath = fileURLToPath(import.meta.url);
-const currentDirPath = path.dirname(currentFilePath);
-const publicDirPath = path.resolve(currentDirPath, "../../public");
+function resolvePublicDirPath() {
+  const metaUrl = import.meta?.url;
+
+  if (typeof metaUrl === "string" && metaUrl.length > 0) {
+    const currentFilePath = fileURLToPath(metaUrl);
+    const currentDirPath = path.dirname(currentFilePath);
+    return path.resolve(currentDirPath, "../../public");
+  }
+
+  return path.resolve(process.cwd(), "public");
+}
+
+const publicDirPath = resolvePublicDirPath();
 
 function buildOrchestratorRequest(body, requestId, sessionId, conversationHistory) {
   const baseRequest = {
