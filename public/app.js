@@ -6,6 +6,10 @@ const resetButton = document.querySelector("#reset-button");
 const statusPill = document.querySelector("#status-pill");
 const agentSelect = document.querySelector("#agent-select");
 
+if (!form || !input || !messageList || !sendButton || !resetButton || !statusPill || !agentSelect) {
+  throw new Error("UI initialization failed: missing expected chat elements.");
+}
+
 const API_BASE = window.location.hostname.includes("localhost") ? "" : "/.netlify/functions/api";
 
 const SESSION_ID_KEY = "agentops-session-id";
@@ -99,11 +103,24 @@ function replaceLastMessage(message) {
 }
 
 function setPendingState(isPending) {
-  sendButton.disabled = isPending;
+  sendButton.disabled = isPending || input.value.trim().length === 0;
   resetButton.disabled = isPending;
   input.disabled = isPending;
   agentSelect.disabled = isPending;
   statusPill.textContent = isPending ? "Streaming" : "Ready";
+}
+
+function autoResizeTextarea() {
+  input.style.height = "auto";
+  input.style.height = `${Math.min(input.scrollHeight, 260)}px`;
+}
+
+function updateSendAvailability() {
+  if (input.disabled) {
+    return;
+  }
+
+  sendButton.disabled = input.value.trim().length === 0;
 }
 
 function updateStatusLabel(selectedAgentId) {
@@ -381,6 +398,7 @@ async function submitQuestion(question, selectedAgentId) {
   addPendingAssistantMessage(selectedAgentId);
 
   input.value = "";
+  autoResizeTextarea();
   setPendingState(true);
 
   let streamedAnswer = "";
@@ -395,21 +413,24 @@ async function submitQuestion(question, selectedAgentId) {
     updateStatusLabel("");
   } finally {
     setPendingState(false);
+    updateSendAvailability();
     input.focus();
   }
 }
 
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
+async function submitFromComposer() {
   const question = input.value.trim();
-  if (!question) {
+  if (!question || sendButton.disabled) {
     return;
   }
 
   const selectedAgentId = agentSelect.value.trim();
-
   await submitQuestion(question, selectedAgentId);
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await submitFromComposer();
 });
 
 input.addEventListener("keydown", async (event) => {
@@ -418,14 +439,12 @@ input.addEventListener("keydown", async (event) => {
   }
 
   event.preventDefault();
+  await submitFromComposer();
+});
 
-  const question = input.value.trim();
-  if (!question || sendButton.disabled) {
-    return;
-  }
-
-  const selectedAgentId = agentSelect.value.trim();
-  await submitQuestion(question, selectedAgentId);
+input.addEventListener("input", () => {
+  autoResizeTextarea();
+  updateSendAvailability();
 });
 
 resetButton.addEventListener("click", async () => {
@@ -435,4 +454,6 @@ resetButton.addEventListener("click", async () => {
 renderMessages();
 loadAgents();
 hydrateServerHistory();
+autoResizeTextarea();
+updateSendAvailability();
 input.focus();
