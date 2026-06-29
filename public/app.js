@@ -115,12 +115,26 @@ function formatError(payload) {
     return "Request failed.";
   }
 
-  if (typeof payload.message === "string") {
-    return payload.message;
+  const parts = [];
+
+  if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+    parts.push(payload.message.trim());
   }
 
-  if (typeof payload.error === "string") {
-    return payload.error;
+  if (typeof payload.code === "string" && payload.code.trim().length > 0) {
+    parts.push(`Code: ${payload.code.trim()}`);
+  }
+
+  if (typeof payload.status === "number") {
+    parts.push(`Status: ${payload.status}`);
+  }
+
+  if (parts.length > 0) {
+    return parts.join(" ");
+  }
+
+  if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+    return payload.error.trim();
   }
 
   return "Request failed.";
@@ -243,7 +257,22 @@ async function streamQuestion(question, agentId, onEvent) {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(formatError(payload));
+    const textPayload = payload
+      ? ""
+      : await response
+          .text()
+          .then((text) => text.trim())
+          .catch(() => "");
+
+    if (payload) {
+      throw new Error(formatError(payload));
+    }
+
+    if (textPayload.length > 0) {
+      throw new Error(textPayload);
+    }
+
+    throw new Error(`Request failed with status ${response.status}.`);
   }
 
   await readServerEvents(response, onEvent);
@@ -341,7 +370,7 @@ function handleStreamPayload(payload, streamedAnswer) {
   }
 
   if (payload.type === "error") {
-    throw new Error(typeof payload.message === "string" ? payload.message : "Stream failed.");
+    throw new Error(formatError(payload));
   }
 
   return streamedAnswer;

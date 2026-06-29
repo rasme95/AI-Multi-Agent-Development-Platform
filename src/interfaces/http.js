@@ -19,6 +19,65 @@ function isUpstreamApiError(error) {
   return "status" in error || "code" in error || "type" in error;
 }
 
+function getNestedMessage(error) {
+  if (typeof error !== "object" || error === null || !("error" in error)) {
+    return undefined;
+  }
+
+  const nestedError = error.error;
+  if (typeof nestedError !== "object" || nestedError === null) {
+    return undefined;
+  }
+
+  return typeof nestedError.message === "string" ? nestedError.message : undefined;
+}
+
+function getNestedCode(error) {
+  if (typeof error !== "object" || error === null || !("error" in error)) {
+    return undefined;
+  }
+
+  const nestedError = error.error;
+  if (typeof nestedError !== "object" || nestedError === null) {
+    return undefined;
+  }
+
+  return typeof nestedError.code === "string" ? nestedError.code : undefined;
+}
+
+function formatUpstreamMessage(status, code, baseMessage) {
+  if (status === 401 || code === "invalid_api_key") {
+    return `${baseMessage} Check OPENAI_API_KEY in your environment variables.`;
+  }
+
+  if (status === 429 || code === "rate_limit_exceeded") {
+    return `${baseMessage} You may have hit a rate or usage limit on your OpenAI account.`;
+  }
+
+  if (code === "insufficient_quota") {
+    return `${baseMessage} Your OpenAI project appears to be out of quota or credits.`;
+  }
+
+  return baseMessage;
+}
+
+function normalizeUpstreamError(error) {
+  const status =
+    typeof error.status === "number" && error.status >= 400 && error.status <= 599
+      ? error.status
+      : 502;
+
+  const code = error.code ?? getNestedCode(error) ?? error.type ?? "unknown_error";
+  const upstreamMessage = error.message ?? getNestedMessage(error) ?? "Upstream AI request failed";
+  const message = formatUpstreamMessage(status, code, upstreamMessage);
+
+  return {
+    status,
+    code,
+    message
+  };
+}
+
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDirPath = path.dirname(currentFilePath);
 const publicDirPath = path.resolve(currentDirPath, "../../public");
@@ -88,6 +147,15 @@ function sendStreamEndEvent(res, requestId, sessionId, selectedAgentId, answer) 
 }
 
 function sendStreamErrorEvent(res, error) {
+  if (isUpstreamApiError(error)) {
+    const normalizedError = normalizeUpstreamError(error);
+    writeServerEvent(res, {
+      type: "error",
+      ...normalizedError
+    });
+    return;
+  }
+
   writeServerEvent(res, {
     type: "error",
     message: error instanceof Error ? error.message : "Streaming request failed"
@@ -212,15 +280,12 @@ export function createHttpServer(orchestrator, conversationStore) {
     }
 
     if (isUpstreamApiError(error)) {
-      const status =
-        typeof error.status === "number" && error.status >= 400 && error.status <= 599
-          ? error.status
-          : 502;
+      const normalizedError = normalizeUpstreamError(error);
 
-      return res.status(status).json({
+      return res.status(normalizedError.status).json({
         error: "UpstreamAIError",
-        code: error.code ?? error.type ?? "unknown_error",
-        message: error.message ?? "Upstream AI request failed"
+        code: normalizedError.code,
+        message: normalizedError.message
       });
     }
 
