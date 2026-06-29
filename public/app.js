@@ -412,6 +412,22 @@ form.addEventListener("submit", async (event) => {
   await submitQuestion(question, selectedAgentId);
 });
 
+input.addEventListener("keydown", async (event) => {
+  if (event.key !== "Enter" || event.shiftKey || event.isComposing) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const question = input.value.trim();
+  if (!question || sendButton.disabled) {
+    return;
+  }
+
+  const selectedAgentId = agentSelect.value.trim();
+  await submitQuestion(question, selectedAgentId);
+});
+
 resetButton.addEventListener("click", async () => {
   await resetSession();
 });
