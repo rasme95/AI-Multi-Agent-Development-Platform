@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgentOps Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <p class="eyebrow">Phase 2 Agent Team</p>
+        <h1>Talk to a full engineering agent team through your own platform.</h1>
+        <p class="hero-copy">
+          This UI stays intentionally thin: the browser talks to your orchestrator, and the
+          orchestrator routes each request to the most relevant specialist or a general architect.
+        </p>
+      </header>
+
+      <main class="chat-layout">
+        <section class="chat-panel" aria-label="Agent chat">
+          <div class="chat-header">
+            <div>
+              <p class="panel-label">Active Route</p>
+              <h2>Orchestrator -> Specialist Team</h2>
+            </div>
+            <span class="status-pill" id="status-pill">Ready</span>
+          </div>
+
+          <div class="message-list" id="message-list" aria-live="polite">
+            <article class="message assistant">
+              <p class="message-role">Platform</p>
+              <div class="message-body">
+                Ask a backend architecture question to verify the full request path from UI to
+                orchestrator, selected specialist, and OpenAI.
+              </div>
+            </article>
+          </div>
+
+          <form class="composer" id="chat-form">
+            <label class="composer-label" for="question-input">Your question</label>
+            <div class="agent-picker-row">
+              <label class="agent-picker-label" for="agent-select">Routing</label>
+              <select id="agent-select" name="agentId">
+                <option value="">Auto-select best agent</option>
+              </select>
+            </div>
+            <textarea
+              id="question-input"
+              maxlength="4000"
+              placeholder="How should I structure a scalable Node.js API with auth, services, and repositories?"
+              required
+            ></textarea>
+            <div class="composer-actions">
+              <p class="hint">Streams via POST /ask/stream and keeps session history in memory</p>
+              <div class="action-buttons">
+                <button type="button" class="secondary-button" id="reset-button">New session</button>
+                <button type="submit" id="send-button">Send question</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <aside class="info-panel" aria-label="Platform summary">
+          <div class="info-card accent">
+            <p class="panel-label">Why this UI exists</p>
+            <p>
+              It gives you a normal product surface now, while keeping the backend architecture
+              clean enough for multiple agents later.
+            </p>
+          </div>
+
+          <div class="info-card">
+            <p class="panel-label">Current capabilities</p>
+            <ul>
+              <li>Multi-agent routing across engineering specialties</li>
+              <li>HTTP API orchestration with optional agent override</li>
+              <li>Streaming responses in the browser chat</li>
+              <li>Session-scoped conversation history</li>
+              <li>Structured upstream error feedback</li>
+            </ul>
+          </div>
+
+          <div class="info-card">
+            <p class="panel-label">Next sensible upgrades</p>
+            <ul>
+              <li>Visual routing trace and confidence</li>
+              <li>Persistent history beyond in-memory sessions</li>
+              <li>Deeper cross-agent orchestration</li>
+            </ul>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
