@@ -28,7 +28,9 @@ async function getHandler() {
 	}
 
 	const { createApp } = await import("../../src/index.js");
-	cachedHandler = serverless(createApp());
+	cachedHandler = serverless(createApp(), {
+		basePath: "/.netlify/functions/api"
+	});
 	return cachedHandler;
 }
 
