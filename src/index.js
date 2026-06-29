@@ -81,9 +81,12 @@ async function main() {
 }
 
 const entryFilePath = process.argv[1] ? path.resolve(process.argv[1]) : undefined;
-const moduleFilePath = fileURLToPath(import.meta.url);
+const moduleFilePath =
+  typeof import.meta?.url === "string" && import.meta.url.length > 0
+    ? fileURLToPath(import.meta.url)
+    : undefined;
 
-if (entryFilePath === moduleFilePath) {
+if (entryFilePath && moduleFilePath && entryFilePath === moduleFilePath) {
   main().catch((error) => {
     logger.error({ err: error }, "Fatal startup error");
     process.exitCode = 1;
